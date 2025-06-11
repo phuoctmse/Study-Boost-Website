@@ -39,8 +39,11 @@ const Header: React.FC = () => {
                             </li>
                         ))}
                         <li>
-                            <Link href="#cta" className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors">
-                                Download
+                            <Link 
+                                href="/auth" 
+                                className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors"
+                            >
+                                Get Started
                             </Link>
                         </li>
                     </ul>
@@ -85,7 +88,11 @@ const Header: React.FC = () => {
                             </li>
                         ))}
                         <li>
-                            <Link href="#cta" className="text-black bg-primary hover:bg-primary-accent px-5 py-2 rounded-full block w-fit" onClick={toggleMenu}>
+                            <Link 
+                                href="/" 
+                                className="text-black bg-primary hover:bg-primary-accent px-5 py-2 rounded-full block w-fit"
+                                onClick={toggleMenu}
+                            >
                                 Get Started
                             </Link>
                         </li>
