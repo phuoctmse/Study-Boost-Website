@@ -14,6 +14,9 @@ export default function VerifyPage() {
                 const userId = searchParams.get('userId');
                 const secret = searchParams.get('secret');
 
+                console.log('userId verify', userId);
+                console.log('secret verify', secret);
+
                 if (!userId || !secret) {
                     setStatus('error');
                     setMessage('Invalid verification link');
