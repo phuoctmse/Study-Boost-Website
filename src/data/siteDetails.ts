@@ -1,9 +1,9 @@
 export const siteDetails = {
-    siteName: 'Finwise',
-    siteUrl: 'https://finwise-omega.vercel.app/',
+    siteName: 'StudyBoost',
+    siteUrl: 'https://study-boost-website.vercel.app/',
     metadata: {
-        title: 'Finwise - Next.js and Tailwind CSS Landing Page Template',
-        description: 'Finwise empowers businesses with cutting-edge technology solutions to drive success and efficiency.',
+        title: 'StudyBoost',
+        description: 'StudyBoost is a platform that helps you study better and faster.',
     },
     language: 'en-us',
     locale: 'en-US',

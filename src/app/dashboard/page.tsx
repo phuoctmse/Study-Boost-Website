@@ -4,6 +4,7 @@ import "../globals.css";
 import { useEffect, useState } from 'react';
 import { account } from '@/lib/appwrite';
 import Link from 'next/link';
+import CustomFingerprint from '@/components/CustomFingerprint';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -100,6 +101,7 @@ export default function Dashboard() {
                             <div className="flex justify-between items-center px-8 py-4">
                                 <h2 className="text-2xl font-semibold text-gray-800">Dashboard</h2>
                                 <div className="flex items-center space-x-4">
+                                    <CustomFingerprint src="/path/to/your/image.png" alt="Fingerprint" className="mr-4" />
                                     <div className="text-right">
                                         <p className="text-sm text-gray-600">Welcome back,</p>
                                         <p className="text-sm font-medium text-gray-900">{user.name || user.email}</p>
