@@ -1,5 +1,6 @@
 export const heroDetails = {
-    heading: 'Smart, Secure, Simple Financial Management',
-    subheading: 'From effortless budgeting to real-time investment insights, StudyBoost puts you in control of your money like never before',
-    centerImageSrc: '/images/hero-mockup.webp',
-}
+  heading: "Học Tập Thông Minh, Dễ Dàng, Hiệu Quả",
+  subheading:
+    "Từ lịch học cá nhân hóa đến trợ lý AI thân thiện, StudyBoost giúp bạn làm chủ việc học một cách chưa từng có!",
+  centerImageSrc: "/images/hero-mockup.webp",
+};
