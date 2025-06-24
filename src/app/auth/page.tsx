@@ -122,7 +122,7 @@ export default function AuthPage() {
                     <h2 className="text-3xl font-bold text-gray-900">
                         {isLogin ? 'Sign in to your account' : 'Create new account'}
                     </h2>
-                    <p className="mt-2 text-sm text-gray-600">
+                    {/* <p className="mt-2 text-sm text-gray-600">
                         {isLogin ? (
                             <>
                                 Or{' '}
@@ -146,7 +146,7 @@ export default function AuthPage() {
                                 </button>
                             </>
                         )}
-                    </p>
+                    </p> */}
                 </div>
 
                 {error && (
