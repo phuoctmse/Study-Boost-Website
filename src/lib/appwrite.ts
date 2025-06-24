@@ -4,6 +4,8 @@ const config = {
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DB_ID as string,
   collections: {
     users: process.env.NEXT_PUBLIC_APPWRITE_COL_USERS_ID as string,
+    payments: process.env.NEXT_PUBLIC_APPWRITE_COL_PAYMENT_ID as string,
+    transactions: process.env.NEXT_PUBLIC_APPWRITE_COL_TRANSACTION_ID as string,
   }
 }
 

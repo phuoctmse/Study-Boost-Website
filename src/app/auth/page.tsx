@@ -51,15 +51,22 @@ export default function AuthPage() {
 
         try {
             if (isLogin) {
-                // Login
-                const session = await account.createEmailPasswordSession(formData.email, formData.password);
-                console.log('sesion', session)
-                if (session.$id) {
-                    // Kiểm tra cookieFallback sau khi login
-                    const cookieFallback = localStorage.getItem('cookieFallback');
-                    if (cookieFallback && cookieFallback !== '[]') {
-                        router.push('/dashboard');
+                // Check for admin credentials
+                if (formData.email === "admin@gmail.com" && formData.password === "admin123") {
+                    // Login
+                    const session = await account.createEmailPasswordSession(formData.email, formData.password);
+                    console.log('session', session)
+                    if (session.$id) {
+                        // Kiểm tra cookieFallback sau khi login
+                        const cookieFallback = localStorage.getItem('cookieFallback');
+                        if (cookieFallback && cookieFallback !== '[]') {
+                            router.push('/dashboard');
+                        }
                     }
+                } else {
+                    setError("You don't have permission to access this area.");
+                    setLoading(false);
+                    return;
                 }
             } else {
                 // Validate password match
@@ -120,6 +127,7 @@ export default function AuthPage() {
                             <>
                                 Or{' '}
                                 <button
+                                    type="button"
                                     className="text-primary hover:text-primary-accent"
                                     onClick={() => setIsLogin(false)}
                                 >
@@ -130,6 +138,7 @@ export default function AuthPage() {
                             <>
                                 Already have an account?{' '}
                                 <button
+                                    type="button"
                                     className="text-primary hover:text-primary-accent"
                                     onClick={() => setIsLogin(true)}
                                 >
