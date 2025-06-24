@@ -6,6 +6,7 @@ const config = {
     users: process.env.NEXT_PUBLIC_APPWRITE_COL_USERS_ID as string,
     payments: process.env.NEXT_PUBLIC_APPWRITE_COL_PAYMENT_ID as string,
     transactions: process.env.NEXT_PUBLIC_APPWRITE_COL_TRANSACTION_ID as string,
+    packages: process.env.NEXT_PUBLIC_APPWRITE_COL_PACKAGES_ID as string,
   }
 }
 
