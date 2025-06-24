@@ -52,7 +52,7 @@ export default function AuthPage() {
         try {
             if (isLogin) {
                 // Check for admin credentials
-                if (formData.email === "admin@gmail.com" && formData.password === "admin123") {
+                if (formData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && formData.password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
                     // Login
                     const session = await account.createEmailPasswordSession(formData.email, formData.password);
                     console.log('session', session)
@@ -122,7 +122,7 @@ export default function AuthPage() {
                     <h2 className="text-3xl font-bold text-gray-900">
                         {isLogin ? 'Sign in to your account' : 'Create new account'}
                     </h2>
-                    <p className="mt-2 text-sm text-gray-600">
+                    {/* <p className="mt-2 text-sm text-gray-600">
                         {isLogin ? (
                             <>
                                 Or{' '}
@@ -146,7 +146,7 @@ export default function AuthPage() {
                                 </button>
                             </>
                         )}
-                    </p>
+                    </p> */}
                 </div>
 
                 {error && (

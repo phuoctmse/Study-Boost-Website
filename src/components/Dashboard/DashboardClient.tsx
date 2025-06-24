@@ -20,7 +20,7 @@ export default function DashboardClient({ children }: { children: React.ReactNod
                 const currentUser = await account.get();
                 
                 // Check if user is admin
-                if (currentUser.email !== "admin@gmail.com") {
+                if (currentUser.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
                     window.location.href = "/auth";
                     return;
                 }

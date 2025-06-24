@@ -1,22 +1,22 @@
-import { databases } from "@/lib/appwrite";
+import { config, databases } from "@/lib/appwrite";
 import { Query } from "appwrite";
 
 async function getStats() {
     try {
         const [users, payments, transactions] = await Promise.all([
             databases.listDocuments(
-                "studyboost",
-                "users",
+                config.databaseId,
+                config.collections.users,
                 [Query.limit(1)]
             ),
             databases.listDocuments(
-                "studyboost",
-                "payments",
+                config.databaseId,
+                config.collections.payments,
                 [Query.limit(1)]
             ),
             databases.listDocuments(
-                "studyboost",
-                "transactions",
+                config.databaseId,
+                config.collections.transactions,
                 [Query.limit(1)]
             )
         ]);
