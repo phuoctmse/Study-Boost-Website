@@ -2,10 +2,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { GoogleAnalytics } from '@next/third-parties/google'
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { siteDetails } from "@/data/siteDetails";
-
+import MainLayout from "@/components/MainLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,9 +20,9 @@ export default function RootLayout({
                 <link rel="icon" href="/images/favicon.ico" />
             </head>
             <body className={inter.className}>
-                <Header />
-                {children}
-                <Footer />
+                <MainLayout>
+                    {children}
+                </MainLayout>
                 {siteDetails.googleAnalyticsId && (
                     <GoogleAnalytics gaId={siteDetails.googleAnalyticsId} />
                 )}
