@@ -52,7 +52,7 @@ export default function AuthPage() {
         try {
             if (isLogin) {
                 // Check for admin credentials
-                if (formData.email === "admin@gmail.com" && formData.password === "admin123") {
+                if (formData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && formData.password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
                     // Login
                     const session = await account.createEmailPasswordSession(formData.email, formData.password);
                     console.log('session', session)
