@@ -6,10 +6,11 @@ import { Query } from "appwrite";
 
 interface User {
     $id: string;
-    name: string;
+    username: string;
     email: string;
-    registration: string;
-    status: string;
+    subscription_plan: string;
+    created_at: Date;
+    updated_at: Date;
 }
 
 export default function UsersTable() {
@@ -56,16 +57,19 @@ export default function UsersTable() {
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Name
+                                User Name
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Email
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Subscription Plan
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Registration Date
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
+                                Updated Date
                             </th>
                         </tr>
                     </thead>
@@ -73,23 +77,23 @@ export default function UsersTable() {
                         {users.map((user) => (
                             <tr key={user.$id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                    <div className="text-sm font-medium text-gray-900">{user.username}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-500">{user.email}</div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-500">{user.subscription_plan}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-500">
-                                        {new Date(user.registration).toLocaleDateString()}
+                                        {new Date(user.created_at).toLocaleDateString()}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        ${user.status === "active" 
-                                            ? "bg-green-100 text-green-800" 
-                                            : "bg-red-100 text-red-800"}`}>
-                                        {user.status}
-                                    </span>
+                                    <div className="text-sm text-gray-500">
+                                        {new Date(user.updated_at).toLocaleDateString()}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
