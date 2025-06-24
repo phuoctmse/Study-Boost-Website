@@ -4,12 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { 
-    HomeIcon, 
-    UsersIcon, 
-    CreditCardIcon, 
+import {
+    HomeIcon,
+    UsersIcon,
+    CreditCardIcon,
     ArrowLeftOnRectangleIcon,
-    ChartBarIcon
+    ChartBarIcon,
+    CurrencyDollarIcon,
+    SquaresPlusIcon
 } from "@heroicons/react/24/outline";
 
 const menuItems = [
@@ -32,6 +34,11 @@ const menuItems = [
         title: "Transactions",
         path: "/dashboard/transactions",
         icon: ChartBarIcon
+    },
+    {
+        title: "Packages",
+        path: "/dashboard/packages",
+        icon: SquaresPlusIcon
     }
 ];
 
@@ -71,8 +78,8 @@ export default function Sidebar({ onLogout }: SidebarProps) {
                                     <Link
                                         href={item.path}
                                         className={`flex items-center p-3 rounded-lg transition-all duration-200
-                                            ${isActive 
-                                                ? 'bg-blue-50 text-blue-600' 
+                                            ${isActive
+                                                ? 'bg-blue-50 text-blue-600'
                                                 : 'text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         <Icon className="w-6 h-6" />
@@ -91,7 +98,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="p-4 border-t border-gray-200 text-gray-600 hover:bg-gray-50"
                 >
-                    <ArrowLeftOnRectangleIcon 
+                    <ArrowLeftOnRectangleIcon
                         className={`w-6 h-6 mx-auto transition-transform duration-300 
                             ${isCollapsed ? 'rotate-180' : ''}`}
                     />
@@ -103,8 +110,10 @@ export default function Sidebar({ onLogout }: SidebarProps) {
                         onClick={onLogout}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50"
                     >
-                        <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-3" />
-                        Logout
+                        <ArrowLeftOnRectangleIcon className="w-6 h-6 mr-3" />
+                        {!isCollapsed && (
+                            <span>Logout</span>
+                        )}
                     </button>
                 </div>
             </div>
