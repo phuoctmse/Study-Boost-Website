@@ -1,8 +1,19 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { account } from '@/lib/appwrite';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+
+// Simple function to create a JWT
+function createToken(email: string) {
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const payload = btoa(JSON.stringify({
+        email,
+        exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+    }));
+    // In a real app, you'd use a proper signing algorithm
+    const signature = btoa('signed');
+    return `${header}.${payload}.${signature}`;
+}
 
 export default function AuthPage() {
     const router = useRouter();
@@ -35,10 +46,9 @@ export default function AuthPage() {
         try {
             if (formData.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL && 
                 formData.password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-                const session = await account.createEmailPasswordSession(formData.email, formData.password);
-                if (session.$id) {
-                    await checkAuth();
-                }
+                const token = createToken(formData.email);
+                localStorage.setItem('auth_token', token);
+                await checkAuth();
             } else {
                 setError("You don't have permission to access this area.");
             }
