@@ -29,6 +29,7 @@ import { databases } from "@/lib/appwrite";
 import { config } from "@/lib/appwrite";
 import { Query } from "appwrite";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type User = {
   $id: string;
@@ -238,20 +239,20 @@ export default function UsersTable() {
           username: formData.username,
           email: formData.email,
           subscription_plan: formData.subscription_plan,
-          created_at: new Date(),
-          updated_at: new Date(),
         }
       );
-      await fetchUsers(); // Refresh the list
+      toast.success("User created successfully");
       setIsCreateDialogOpen(false);
+      fetchUsers();
     } catch (error) {
       console.error("Error creating user:", error);
+      toast.error("Failed to create user");
     }
   };
 
   const handleEditSubmit = async () => {
+    if (!selectedUser) return;
     try {
-      if (!selectedUser) return;
       await databases.updateDocument(
         config.databaseId,
         config.collections.users,
@@ -260,13 +261,14 @@ export default function UsersTable() {
           username: formData.username,
           email: formData.email,
           subscription_plan: formData.subscription_plan,
-          updated_at: new Date(),
         }
       );
-      await fetchUsers(); // Refresh the list
+      toast.success("User updated successfully");
       setIsEditDialogOpen(false);
+      fetchUsers();
     } catch (error) {
       console.error("Error updating user:", error);
+      toast.error("Failed to update user");
     }
   };
 
@@ -278,10 +280,12 @@ export default function UsersTable() {
         config.collections.users,
         selectedUser.$id
       );
-      await fetchUsers(); // Refresh the list
+      toast.success("User deleted successfully");
+      fetchUsers();
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
     }
   };
 
