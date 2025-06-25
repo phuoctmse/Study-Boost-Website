@@ -11,7 +11,8 @@ import {
     ArrowLeftOnRectangleIcon,
     ChartBarIcon,
     CurrencyDollarIcon,
-    SquaresPlusIcon
+    SquaresPlusIcon,
+    ChatBubbleLeftRightIcon
 } from "@heroicons/react/24/outline";
 
 const menuItems = [
@@ -39,6 +40,11 @@ const menuItems = [
         title: "Packages",
         path: "/dashboard/packages",
         icon: SquaresPlusIcon
+    },
+    {
+        title: "Feedback",
+        path: "/dashboard/feedback",
+        icon: ChatBubbleLeftRightIcon
     }
 ];
 
