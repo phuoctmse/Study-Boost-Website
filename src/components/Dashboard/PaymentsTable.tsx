@@ -1,20 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { config, databases } from "@/lib/appwrite";
+import { useState, useEffect } from "react";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    ColumnDef,
+    SortingState,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+    useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { databases } from "@/lib/appwrite";
+import { config } from "@/lib/appwrite";
 import { Query, Models } from "appwrite";
+import { cn } from "@/lib/utils";
 
-interface Payment {
+type Payment = {
     $id: string;
     user_id: string;
     package_id: string;
     payment_transaction_id: string;
     started_at: string;
     ended_at: string;
-    status: "Pending" | "Completed" | "Failed";
-}
+    status: "active" | "expired" | "cancelled";
+    created_at: string;
+    username?: string;
+    packageName?: string;
+};
 
-interface PaymentTransaction {
+type PaymentTransaction = {
     $id: string;
     gateway: string;
     transactionDate: string;
@@ -28,43 +56,181 @@ interface PaymentTransaction {
     referenceNumber: string;
     body: string;
     sepay_id: string;
-}
+};
+
+const columns: ColumnDef<Payment>[] = [
+    {
+        accessorKey: "username",
+        header: ({ column }) => {
+            return (
+                <button
+                    className="flex items-center"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Username
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </button>
+            );
+        },
+        cell: ({ row }) => (
+            <div className="font-medium text-gray-900">
+                {row.getValue("username") || row.getValue("user_id")}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "packageName",
+        header: ({ column }) => {
+            return (
+                <button
+                    className="flex items-center"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Package
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </button>
+            );
+        },
+        cell: ({ row }) => (
+            <div className="text-gray-600">
+                {row.getValue("packageName") || "Unknown Package"}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "status",
+        header: ({ column }) => {
+            return (
+                <button
+                    className="flex items-center"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Status
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </button>
+            );
+        },
+        cell: ({ row }) => {
+            const status = row.getValue("status") as string;
+            return (
+                <div
+                    className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        {
+                            "bg-green-100 text-green-800": status === "active",
+                            "bg-yellow-100 text-yellow-800": status === "expired",
+                            "bg-red-100 text-red-800": status === "cancelled",
+                        }
+                    )}
+                >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                </div>
+            );
+        },
+    },
+    {
+        accessorKey: "started_at",
+        header: ({ column }) => {
+            return (
+                <button
+                    className="flex items-center"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Start Date
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </button>
+            );
+        },
+        cell: ({ row }) => (
+            <div className="text-gray-600">
+                {new Date(row.getValue("started_at")).toLocaleDateString()}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "ended_at",
+        header: ({ column }) => {
+            return (
+                <button
+                    className="flex items-center"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    End Date
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </button>
+            );
+        },
+        cell: ({ row }) => (
+            <div className="text-gray-600">
+                {new Date(row.getValue("ended_at")).toLocaleDateString()}
+            </div>
+        ),
+    },
+];
 
 export default function PaymentsTable() {
-    const [payments, setPayments] = useState<(Payment & { transaction?: PaymentTransaction })[]>([]);
+    const [sorting, setSorting] = useState<SortingState>([]);
+    const [data, setData] = useState<Payment[]>([]);
+    const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+    const [transactionDetails, setTransactionDetails] = useState<PaymentTransaction | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const table = useReactTable({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        state: {
+            sorting,
+        },
+    });
 
     useEffect(() => {
         const fetchPayments = async () => {
             try {
                 const response = await databases.listDocuments(
                     config.databaseId,
-                    "68523e3e0010cbf7aa7a", // Payment collection ID
+                    config.collections.payments,
                     [Query.orderDesc("$createdAt")]
                 );
+                
+                const paymentsWithDetails = await Promise.all(
+                    response.documents.map(async (payment) => {
+                        try {
+                            const [userResponse, packageResponse] = await Promise.all([
+                                databases.getDocument(
+                                    config.databaseId,
+                                    config.collections.users,
+                                    payment.user_id
+                                ),
+                                databases.getDocument(
+                                    config.databaseId,
+                                    config.collections.packages,
+                                    payment.package_id
+                                )
+                            ]);
 
-                const paymentsWithTransactions = await Promise.all(
-                    response.documents.map(async (doc: Models.Document) => {
-                        const payment = doc as unknown as Payment;
-                        if (payment.payment_transaction_id) {
-                            const transactionDoc = await databases.getDocument(
-                                config.databaseId,
-                                "683ef8a40012b31c1ef3", // PaymentTransactions collection ID
-                                payment.payment_transaction_id
-                            );
                             return {
                                 ...payment,
-                                transaction: transactionDoc as unknown as PaymentTransaction
-                            };
+                                username: userResponse.username,
+                                packageName: packageResponse.name,
+                            } as unknown as Payment;
+                        } catch (error) {
+                            console.error(`Error fetching details for payment ${payment.$id}:`, error);
+                            return {
+                                ...payment,
+                                username: "Unknown User",
+                                packageName: "Unknown Package",
+                            } as unknown as Payment;
                         }
-                        return payment;
                     })
                 );
-
-                setPayments(paymentsWithTransactions as (Payment & { transaction?: PaymentTransaction })[]);
-                setLoading(false);
+                
+                setData(paymentsWithDetails);
             } catch (error) {
                 console.error("Error fetching payments:", error);
+            } finally {
                 setLoading(false);
             }
         };
@@ -72,59 +238,124 @@ export default function PaymentsTable() {
         fetchPayments();
     }, []);
 
+    const handleRowClick = async (payment: Payment) => {
+        console.log(payment)
+        setSelectedPayment(payment);
+        try {
+            const response = await databases.getDocument(
+                config.databaseId,
+                config.collections.transactions,
+                payment.payment_transaction_id
+            );
+            setTransactionDetails(response as unknown as PaymentTransaction);
+        } catch (error) {
+            console.error("Error fetching transaction details:", error);
+        }
+    };
+
     if (loading) {
-        return <div>Loading payments...</div>;
+        return <div className="text-center py-4">Loading...</div>;
+    }
+
+    if (data.length === 0) {
+        return <div className="text-center py-4">No payments found</div>;
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-300">
-                <thead className="bg-gray-100">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started At</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ended At</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gateway</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {payments.map((payment) => (
-                        <tr key={payment.$id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.$id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.user_id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.package_id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    ${payment.status === "Completed" ? "bg-green-100 text-green-800" : 
-                                    payment.status === "Failed" ? "bg-red-100 text-red-800" : 
-                                    "bg-yellow-100 text-yellow-800"}`}>
-                                    {payment.status}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(payment.started_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {payment.ended_at ? new Date(payment.ended_at).toLocaleDateString() : "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {payment.transaction?.gateway || "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {payment.transaction ? `${payment.transaction.amountIn.toLocaleString()} VND` : "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {payment.transaction?.referenceNumber || "-"}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <>
+            <div className="rounded-md border shadow-sm">
+                <Table>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead key={header.id}>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+                    <TableBody>
+                        {table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                onClick={() => handleRowClick(row.original)}
+                                className="cursor-pointer hover:bg-gray-50"
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+
+            <Dialog open={!!selectedPayment} onOpenChange={() => setSelectedPayment(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Payment Transaction Details</DialogTitle>
+                    </DialogHeader>
+                    {transactionDetails && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Gateway</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.gateway}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Transaction Date</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.transactionDate}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Account Number</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.accountNumber}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Sub Account</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.subAccount}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Amount In</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.amountIn.toLocaleString()} VND</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Amount Out</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.amountOut.toLocaleString()} VND</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Accumulated</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.accumulated.toLocaleString()} VND</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Transaction Code</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.code}</p>
+                                </div>
+                                <div className="col-span-2 space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Transaction Content</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.transactionContent}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Reference Number</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.referenceNumber}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Sepay ID</p>
+                                    <p className="text-sm text-gray-900">{transactionDetails.sepay_id}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+        </>
     );
 } 

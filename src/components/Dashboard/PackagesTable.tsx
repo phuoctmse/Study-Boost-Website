@@ -1,10 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { config, databases } from "@/lib/appwrite";
-import { Query, Models } from "appwrite";
+import { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ColumnDef,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { databases } from "@/lib/appwrite";
+import { config } from "@/lib/appwrite";
+import { Query } from "appwrite";
+import { cn } from "@/lib/utils";
 
-interface Package {
+type Package = {
     $id: string;
     name: string;
     description: string[];
@@ -12,77 +31,208 @@ interface Package {
     duration: number;
     created_at: Date;
     updated_at: Date;
-}
+};
+
+const columns: ColumnDef<Package>[] = [
+  {
+    accessorKey: "name",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center font-semibold text-blue-600 hover:text-blue-800"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Package Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="font-medium text-gray-900">{row.getValue("name")}</div>
+    ),
+  },
+  {
+    accessorKey: "description",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center font-semibold text-blue-600 hover:text-blue-800"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Description
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-gray-600 max-w-xs truncate">
+        {row.getValue("description")}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "price",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center font-semibold text-blue-600 hover:text-blue-800"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Price
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-gray-900">
+        ${row.getValue<number>("price").toLocaleString()}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "duration",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center font-semibold text-blue-600 hover:text-blue-800"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Duration
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-gray-600">{row.getValue("duration")}</div>
+    ),
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Created Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-gray-600">
+        {new Date(row.getValue("created_at")).toLocaleDateString()}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "updated_at",
+    header: ({ column }) => {
+      return (
+        <button
+          className="flex items-center"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Updated Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-gray-600">
+        {new Date(row.getValue("updated_at")).toLocaleDateString()}
+      </div>
+    ),
+  },
+];
 
 export default function PackagesTable() {
-    const [packages, setPackages] = useState<Package[]>([]);
-    const [loading, setLoading] = useState(true);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [data, setData] = useState<Package[]>([]);
 
-    useEffect(() => {
-        const fetchPackages = async () => {
-            try {
-                const response = await databases.listDocuments(
-                    config.databaseId,
-                    config.collections.packages,
-                    [Query.orderDesc("$createdAt")]
-                );
-                setPackages(response.documents.map((doc: Models.Document) => doc as unknown as Package));
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching packages:", error);
-                setLoading(false);
-            }
-        };
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    onSortingChange: setSorting,
+    state: {
+      sorting,
+    },
+  });
 
-        fetchPackages();
-    }, []);
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        const response = await databases.listDocuments(
+          config.databaseId,
+          config.collections.packages,
+          [Query.orderDesc("$createdAt"), Query.limit(100)]
+        );
+        console.log(response)
+        setData(response.documents.map(doc => ({
+          $id: doc.$id,
+          name: doc.name,
+          description: doc.description,
+          price: doc.price,
+          duration: doc.duration,
+          created_at: new Date(doc.created_at),
+          updated_at: new Date(doc.updated_at)
+        })));
+      } catch (error) {
+        console.error("Error fetching packages:", error);
+      }
+    };
 
-    if (loading) {
-        return <div>Loading packages...</div>;
-    }
+    fetchPackages();
+  }, []);
 
-    return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-300">
-                <thead className="bg-gray-100">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated At</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {packages.map((pkg) => (
-                        <tr key={pkg.$id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {pkg.name}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                                <ul className="list-disc list-inside">
-                                    {pkg.description.map((desc, index) => (
-                                        <li key={index} className="mb-1">{desc}</li>
-                                    ))}
-                                </ul>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {pkg.price.toLocaleString()} VND
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {pkg.duration} days
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(pkg.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(pkg.updated_at).toLocaleDateString()}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
+  return (
+    <div className="rounded-lg border bg-white shadow">
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="bg-gray-50 hover:bg-gray-50">
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id} className="py-4">
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="py-3">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell 
+                colSpan={columns.length} 
+                className="h-24 text-center text-gray-500"
+              >
+                No packages found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
 } 

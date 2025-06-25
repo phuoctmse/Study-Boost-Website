@@ -30,11 +30,11 @@ const menuItems = [
         path: "/dashboard/payments",
         icon: CreditCardIcon
     },
-    {
-        title: "Transactions",
-        path: "/dashboard/transactions",
-        icon: ChartBarIcon
-    },
+    // {
+    //     title: "Transactions",
+    //     path: "/dashboard/transactions",
+    //     icon: ChartBarIcon
+    // },
     {
         title: "Packages",
         path: "/dashboard/packages",
