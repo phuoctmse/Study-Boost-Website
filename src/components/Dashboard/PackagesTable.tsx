@@ -48,13 +48,31 @@ export default function PackagesTable() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        name: "",
+        description: [""],
+        price: 0,
+        duration: 30,
+    });
 
     const handleCreate = () => {
+        setFormData({
+            name: "",
+            description: [""],
+            price: 0,
+            duration: 30,
+        });
         setIsCreateDialogOpen(true);
     };
 
     const handleEdit = (pkg: Package) => {
         setSelectedPackage(pkg);
+        setFormData({
+            name: pkg.name,
+            description: pkg.description,
+            price: pkg.price,
+            duration: pkg.duration,
+        });
         setIsEditDialogOpen(true);
     };
 
@@ -236,7 +254,19 @@ export default function PackagesTable() {
 
     const handleCreateSubmit = async () => {
         try {
-            // Add create logic here
+            await databases.createDocument(
+                config.databaseId,
+                config.collections.packages,
+                "unique()",
+                {
+                    name: formData.name,
+                    description: formData.description,
+                    price: formData.price,
+                    duration: formData.duration,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                }
+            );
             await fetchPackages(); // Refresh the list
             setIsCreateDialogOpen(false);
         } catch (error) {
@@ -247,7 +277,18 @@ export default function PackagesTable() {
     const handleEditSubmit = async () => {
         try {
             if (!selectedPackage) return;
-            // Add edit logic here
+            await databases.updateDocument(
+                config.databaseId,
+                config.collections.packages,
+                selectedPackage.$id,
+                {
+                    name: formData.name,
+                    description: formData.description,
+                    price: formData.price,
+                    duration: formData.duration,
+                    updated_at: new Date(),
+                }
+            );
             await fetchPackages(); // Refresh the list
             setIsEditDialogOpen(false);
         } catch (error) {
@@ -341,9 +382,89 @@ export default function PackagesTable() {
                     <DialogHeader>
                         <DialogTitle>Create New Package</DialogTitle>
                     </DialogHeader>
-                    {/* Add your create form here */}
                     <div className="grid gap-4 py-4">
-                        {/* Add form fields */}
+                        <div className="grid gap-2">
+                            <label htmlFor="name" className="text-sm font-medium">
+                                Name
+                            </label>
+                            <input
+                                id="name"
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, name: e.target.value })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <label className="text-sm font-medium">Description</label>
+                            {formData.description.map((item, index) => (
+                                <div key={index} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                            const newDescription = [...formData.description];
+                                            newDescription[index] = e.target.value;
+                                            setFormData({ ...formData, description: newDescription });
+                                        }}
+                                        className="flex-1 rounded-md border px-3 py-2 text-sm"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newDescription = formData.description.filter((_, i) => i !== index);
+                                            setFormData({ ...formData, description: newDescription });
+                                        }}
+                                        className="rounded-md bg-red-100 px-2 py-1 text-sm text-red-600 hover:bg-red-200"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => {
+                                    setFormData({
+                                        ...formData,
+                                        description: [...formData.description, ""],
+                                    });
+                                }}
+                                className="mt-2 rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-600 hover:bg-gray-200"
+                            >
+                                Add Description Item
+                            </button>
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="price" className="text-sm font-medium">
+                                Price (USD)
+                            </label>
+                            <input
+                                id="price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData.price}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, price: parseFloat(e.target.value) })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="duration" className="text-sm font-medium">
+                                Duration (days)
+                            </label>
+                            <input
+                                id="duration"
+                                type="number"
+                                min="1"
+                                value={formData.duration}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, duration: parseInt(e.target.value) })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <button
@@ -368,9 +489,89 @@ export default function PackagesTable() {
                     <DialogHeader>
                         <DialogTitle>Edit Package</DialogTitle>
                     </DialogHeader>
-                    {/* Add your edit form here */}
                     <div className="grid gap-4 py-4">
-                        {/* Add form fields */}
+                        <div className="grid gap-2">
+                            <label htmlFor="edit-name" className="text-sm font-medium">
+                                Name
+                            </label>
+                            <input
+                                id="edit-name"
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, name: e.target.value })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <label className="text-sm font-medium">Description</label>
+                            {formData.description.map((item, index) => (
+                                <div key={index} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={item}
+                                        onChange={(e) => {
+                                            const newDescription = [...formData.description];
+                                            newDescription[index] = e.target.value;
+                                            setFormData({ ...formData, description: newDescription });
+                                        }}
+                                        className="flex-1 rounded-md border px-3 py-2 text-sm"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newDescription = formData.description.filter((_, i) => i !== index);
+                                            setFormData({ ...formData, description: newDescription });
+                                        }}
+                                        className="rounded-md bg-red-100 px-2 py-1 text-sm text-red-600 hover:bg-red-200"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={() => {
+                                    setFormData({
+                                        ...formData,
+                                        description: [...formData.description, ""],
+                                    });
+                                }}
+                                className="mt-2 rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-600 hover:bg-gray-200"
+                            >
+                                Add Description Item
+                            </button>
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="edit-price" className="text-sm font-medium">
+                                Price (USD)
+                            </label>
+                            <input
+                                id="edit-price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData.price}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, price: parseFloat(e.target.value) })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="edit-duration" className="text-sm font-medium">
+                                Duration (days)
+                            </label>
+                            <input
+                                id="edit-duration"
+                                type="number"
+                                min="1"
+                                value={formData.duration}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, duration: parseInt(e.target.value) })
+                                }
+                                className="rounded-md border px-3 py-2 text-sm"
+                            />
+                        </div>
                     </div>
                     <DialogFooter>
                         <button

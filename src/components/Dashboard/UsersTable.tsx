@@ -34,7 +34,7 @@ type User = {
   $id: string;
   username: string;
   email: string;
-  subscription_plan: string;
+  subscription_plan: "Free" | "Students" | "Dài Hạn";
   created_at: Date;
   updated_at: Date;
 };
@@ -47,13 +47,28 @@ export default function UsersTable() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    subscription_plan: "Free",
+  });
 
   const handleCreate = () => {
+    setFormData({
+      username: "",
+      email: "",
+      subscription_plan: "Free",
+    });
     setIsCreateDialogOpen(true);
   };
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
+    setFormData({
+      username: user.username,
+      email: user.email,
+      subscription_plan: user.subscription_plan,
+    });
     setIsEditDialogOpen(true);
   };
 
@@ -100,10 +115,9 @@ export default function UsersTable() {
           <div
             className={cn(
               "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-              plan === "free" && "bg-gray-100 text-gray-800",
-              plan === "basic" && "bg-blue-100 text-blue-800",
-              plan === "premium" && "bg-purple-100 text-purple-800",
-              plan === "pro" && "bg-green-100 text-green-800"
+              plan === "Free" && "bg-gray-100 text-gray-800",
+              plan === "Students" && "bg-blue-100 text-blue-800",
+              plan === "Dài Hạn" && "bg-purple-100 text-purple-800",
             )}
           >
             {plan.charAt(0).toUpperCase() + plan.slice(1)}
@@ -216,7 +230,18 @@ export default function UsersTable() {
 
   const handleCreateSubmit = async () => {
     try {
-      // Add create logic here
+      await databases.createDocument(
+        config.databaseId,
+        config.collections.users,
+        "unique()",
+        {
+          username: formData.username,
+          email: formData.email,
+          subscription_plan: formData.subscription_plan,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }
+      );
       await fetchUsers(); // Refresh the list
       setIsCreateDialogOpen(false);
     } catch (error) {
@@ -227,7 +252,17 @@ export default function UsersTable() {
   const handleEditSubmit = async () => {
     try {
       if (!selectedUser) return;
-      // Add edit logic here
+      await databases.updateDocument(
+        config.databaseId,
+        config.collections.users,
+        selectedUser.$id,
+        {
+          username: formData.username,
+          email: formData.email,
+          subscription_plan: formData.subscription_plan,
+          updated_at: new Date(),
+        }
+      );
       await fetchUsers(); // Refresh the list
       setIsEditDialogOpen(false);
     } catch (error) {
@@ -321,9 +356,52 @@ export default function UsersTable() {
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
           </DialogHeader>
-          {/* Add your create form here */}
           <div className="grid gap-4 py-4">
-            {/* Add form fields */}
+            <div className="grid gap-2">
+              <label htmlFor="username" className="text-sm font-medium">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="subscription" className="text-sm font-medium">
+                Subscription Plan
+              </label>
+              <select
+                id="subscription"
+                value={formData.subscription_plan}
+                onChange={(e) =>
+                  setFormData({ ...formData, subscription_plan: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              >
+                <option value="Free">Free</option>
+                <option value="Students">Students</option>
+                <option value="Dài Hạn">Dài Hạn</option>
+              </select>
+            </div>
           </div>
           <DialogFooter>
             <button
@@ -348,9 +426,52 @@ export default function UsersTable() {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
-          {/* Add your edit form here */}
           <div className="grid gap-4 py-4">
-            {/* Add form fields */}
+            <div className="grid gap-2">
+              <label htmlFor="edit-username" className="text-sm font-medium">
+                Username
+              </label>
+              <input
+                id="edit-username"
+                type="text"
+                value={formData.username}
+                onChange={(e) =>
+                  setFormData({ ...formData, username: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-email" className="text-sm font-medium">
+                Email
+              </label>
+              <input
+                id="edit-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="edit-subscription" className="text-sm font-medium">
+                Subscription Plan
+              </label>
+              <select
+                id="edit-subscription"
+                value={formData.subscription_plan}
+                onChange={(e) =>
+                  setFormData({ ...formData, subscription_plan: e.target.value })
+                }
+                className="rounded-md border px-3 py-2 text-sm"
+              >
+                <option value="Free">Free</option>
+                <option value="Students">Students</option>
+                <option value="Dài Hạn">Dài Hạn</option>
+              </select>
+            </div>
           </div>
           <DialogFooter>
             <button
