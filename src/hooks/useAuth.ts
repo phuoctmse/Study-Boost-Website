@@ -1,48 +1,37 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { account } from '@/lib/appwrite';
-import { Models } from 'appwrite';
 
-// Cache để tránh gọi API liên tục
-let authCache: {
-    user: Models.User<Models.Preferences> | null;
-    timestamp: number;
-} | null = null;
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
+interface User {
+    email: string;
+}
 
 export function useAuth() {
-    const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const checkAuth = useCallback(async (): Promise<Models.User<Models.Preferences> | null> => {
+    const checkAuth = useCallback(async () => {
         try {
-            // Kiểm tra cache trước
-            if (authCache && (Date.now() - authCache.timestamp) < CACHE_DURATION) {
-                setUser(authCache.user);
-                setLoading(false);
-                return authCache.user;
-            }
-
-            const cookieFallback = localStorage.getItem('cookieFallback');
-            if (!cookieFallback || cookieFallback === '[]') {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
                 setUser(null);
-                authCache = { user: null, timestamp: Date.now() };
                 setLoading(false);
                 return null;
             }
 
-            const currentUser = await account.get();
-            authCache = {
-                user: currentUser,
-                timestamp: Date.now()
-            };
-            setUser(currentUser);
-            return currentUser;
+            // Decode JWT payload
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+                // Token expired
+                localStorage.removeItem('auth_token');
+                setUser(null);
+                return null;
+            }
+
+            setUser({ email: payload.email });
+            return { email: payload.email };
         } catch (error) {
             console.error('Auth check error:', error);
             setUser(null);
-            authCache = { user: null, timestamp: Date.now() };
             return null;
         } finally {
             setLoading(false);
@@ -53,15 +42,9 @@ export function useAuth() {
         checkAuth();
     }, [checkAuth]);
 
-    const logout = async () => {
-        try {
-            await account.deleteSession('current');
-            localStorage.removeItem('cookieFallback');
-            setUser(null);
-            authCache = null;
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
+    const logout = () => {
+        localStorage.removeItem('auth_token');
+        setUser(null);
     };
 
     return { user, loading, logout, checkAuth };
