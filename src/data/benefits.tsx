@@ -1,70 +1,70 @@
-import { FiBarChart2, FiBriefcase, FiDollarSign, FiLock, FiPieChart, FiShield, FiTarget, FiTrendingUp, FiUser } from "react-icons/fi";
+import { FiBarChart2, FiBriefcase, FiDollarSign, FiLock, FiPieChart, FiShield, FiTarget, FiTrendingUp, FiUser, FiClock, FiMessageSquare, FiAward, FiCalendar, FiBookOpen, FiActivity, FiUsers } from "react-icons/fi";
 
 import { IBenefit } from "@/types"
 
 export const benefits: IBenefit[] = [
     {
-        title: "Smart Budgeting",
-        description: "Take the guesswork out of managing your money. Our AI-powered budgeting tool adapts to your lifestyle and helps you stay on track.",
+        title: "Học tập thông minh với AI",
+        description: "Tối ưu hóa việc học của bạn với trợ lý AI thông minh, giúp bạn hiểu sâu hơn và học hiệu quả hơn.",
         bullets: [
             {
-                title: "Intelligent Categorization",
-                description: "Automatically sorts your transactions for crystal-clear insights.",
-                icon: <FiBarChart2 size={26} />
+                title: "Trợ lý AI cá nhân",
+                description: "Chat với AI để được giải đáp thắc mắc và hướng dẫn học tập 24/7.",
+                icon: <FiMessageSquare size={26} />
             },
             {
-                title: "Customizable Goals",
-                description: "Set and track financial objectives that matter to you.",
-                icon: <FiTarget size={26} />
+                title: "Phân tích học tập",
+                description: "Nhận phản hồi chi tiết và đề xuất cải thiện từ AI.",
+                icon: <FiMessageSquare size={26} />
             },
             {
-                title: "Predictive Analysis",
-                description: "Get ahead of your finances with spending forecasts and alerts.",
-                icon: <FiTrendingUp size={26} />
+                title: "Nội dung tương tác",
+                description: "Học thông qua các bài tập và quiz được cá nhân hóa.",
+                icon: <FiBookOpen size={26} />
             }
         ],
         imageSrc: "/images/mockup-1.webp"
     },
     {
-        title: "Seamless Investing",
-        description: "Start building wealth today, no financial degree required. Finwise makes investing accessible and straightforward.",
+        title: "Quản lý thời gian hiệu quả",
+        description: "Tối ưu hóa thời gian học tập với phương pháp Pomodoro và các công cụ theo dõi tiến độ.",
         bullets: [
             {
-                title: "Micro-Investing",
-                description: "Begin with as little as $1 and watch your money grow.",
-                icon: <FiDollarSign size={26} />
+                title: "Pomodoro Timer",
+                description: "Tập trung học tập với chu kỳ làm việc và nghỉ ngơi khoa học.",
+                icon: <FiClock size={26} />
             },
             {
-                title: "Expert Portfolios",
-                description: "Choose from investment strategies tailored to your risk tolerance.",
-                icon: <FiBriefcase size={26} />
+                title: "Lịch học thông minh",
+                description: "Lập kế hoạch và nhắc nhở tự động cho các mục tiêu học tập.",
+                icon: <FiCalendar size={26} />
             },
             {
-                title: "Real-Time Performance",
-                description: "Track your investments with easy-to-understand metrics and visuals.",
-                icon: <FiPieChart size={26} />
+                title: "Theo dõi tiến độ",
+                description: "Xem thống kê chi tiết về thời gian học và hiệu suất.",
+                icon: <FiActivity size={26} />
             }
         ],
         imageSrc: "/images/mockup-2.webp"
     },
     {
-        title: "Bank-Grade Security",
-        description: "Your financial data deserves the best protection. Rest easy knowing Finwise employs cutting-edge security measures.",
+        title: "Cộng đồng học tập sôi động",
+        description: "Tham gia vào cộng đồng học tập năng động, thi đua và chia sẻ kiến thức.",
         bullets: [
             {
-                title: "Military-Grade Encryption",
-                description: "Your information is safeguarded with the highest level of encryption.",
-                icon: <FiLock size={26} />
+                title: "Xếp hạng người dùng",
+                description: "Thi đua với người học khác thông qua bảng xếp hạng.",
+                icon: <FiAward size={26} />
             },
             {
-                title: "Biometric Authentication",
-                description: "Access your account securely with fingerprint or facial recognition.",
-                icon: <FiUser size={26} />
+                title: "Học nhóm",
+                description: "Tạo và tham gia các nhóm học tập cùng sở thích.",
+                icon: <FiUsers size={26} />
             },
             {
-                title: "Real-Time Fraud Detection",
-                description: "Our system constantly monitors for suspicious activity to keep your money safe.",
-                icon: <FiShield size={26} />
+                title: "Thành tích & Huy hiệu",
+                description: "Nhận thưởng và huy hiệu khi đạt được các mục tiêu học tập.",
+                icon: <FiTarget size={26} />
             }
         ],
         imageSrc: "/images/mockup-1.webp"

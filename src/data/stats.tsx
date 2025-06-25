@@ -1,22 +1,22 @@
-import { BsBarChartFill, BsFillStarFill } from "react-icons/bs";
-import { PiGlobeFill } from "react-icons/pi";
+import { BsBarChartFill, BsFillStarFill, BsFillClockFill } from "react-icons/bs";
+import { PiGlobeFill, PiUsersFill, PiBrainFill } from "react-icons/pi";
 
 import { IStats } from "@/types";
 
 export const stats: IStats[] = [
     {
-        title: "20M+",
-        icon: <BsBarChartFill size={34} className="text-blue-500" />,
-        description: "Transactions processed securely every day, providing real-time insights."
+        title: "1k+",
+        icon: <PiUsersFill size={34} className="text-blue-500" />,
+        description: "Học viên đang sử dụng StudyBoost để cải thiện việc học tập mỗi ngày."
     },
     {
-        title: "5.0",
+        title: "4.9",
         icon: <BsFillStarFill size={34} className="text-yellow-500" />,
-        description: "Star rating, consistently maintained across app stores."
+        description: "Đánh giá trung bình từ người dùng trên các kho ứng dụng."
     },
     {
-        title: "200+ ",
-        icon: <PiGlobeFill size={34} className="text-green-600" />,
-        description: "Financial Institutions, seamlessly integrated, so you can manage all accounts."
+        title: "1k+",
+        icon: <BsFillClockFill size={34} className="text-green-600" />,
+        description: "Phiên Pomodoro đã hoàn thành, giúp người học tập trung và hiệu quả hơn."
     }
 ];

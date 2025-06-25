@@ -12,10 +12,10 @@ const FAQ: React.FC = () => {
                 <div className="">
                     <p className="hidden lg:block text-foreground-accent">FAQ&apos;S</p>
                     <SectionTitle>
-                        <h2 className="my-3 !leading-snug lg:max-w-sm text-center lg:text-left">Frequently Asked Questions</h2>
+                        <h2 className="my-3 !leading-snug lg:max-w-sm text-center lg:text-left">Câu hỏi thường gặp</h2>
                     </SectionTitle>
                     <p className="lg:mt-10 text-foreground-accent text-center lg:text-left">
-                        Ask us anything!
+                        Câu hỏi thường gặp
                     </p>
                     <a href="mailto:" className="mt-3 block text-xl lg:text-4xl text-secondary font-semibold hover:underline text-center lg:text-left">studyboost@gmail.com</a>
                 </div>
