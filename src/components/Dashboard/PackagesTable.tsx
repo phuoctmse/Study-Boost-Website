@@ -29,6 +29,7 @@ import { databases } from "@/lib/appwrite";
 import { config } from "@/lib/appwrite";
 import { Query } from "appwrite";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Package = {
     $id: string;
@@ -263,20 +264,20 @@ export default function PackagesTable() {
                     description: formData.description,
                     price: formData.price,
                     duration: formData.duration,
-                    created_at: new Date(),
-                    updated_at: new Date(),
                 }
             );
-            await fetchPackages(); // Refresh the list
+            toast.success("Package created successfully");
             setIsCreateDialogOpen(false);
+            await fetchPackages();
         } catch (error) {
             console.error("Error creating package:", error);
+            toast.error("Failed to create package");
         }
     };
 
     const handleEditSubmit = async () => {
+        if (!selectedPackage) return;
         try {
-            if (!selectedPackage) return;
             await databases.updateDocument(
                 config.databaseId,
                 config.collections.packages,
@@ -286,13 +287,14 @@ export default function PackagesTable() {
                     description: formData.description,
                     price: formData.price,
                     duration: formData.duration,
-                    updated_at: new Date(),
                 }
             );
-            await fetchPackages(); // Refresh the list
+            toast.success("Package updated successfully");
             setIsEditDialogOpen(false);
+            await fetchPackages();
         } catch (error) {
             console.error("Error updating package:", error);
+            toast.error("Failed to update package");
         }
     };
 
@@ -304,10 +306,12 @@ export default function PackagesTable() {
                 config.collections.packages,
                 selectedPackage.$id
             );
-            await fetchPackages(); // Refresh the list
+            toast.success("Package deleted successfully");
+            await fetchPackages();
             setIsDeleteDialogOpen(false);
         } catch (error) {
             console.error("Error deleting package:", error);
+            toast.error("Failed to delete package");
         }
     };
 

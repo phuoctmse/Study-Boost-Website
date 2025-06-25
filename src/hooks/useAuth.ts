@@ -1,63 +1,68 @@
-import { useState, useEffect } from 'react';
+"use client";
+import { useState, useEffect, useCallback } from 'react';
 import { account } from '@/lib/appwrite';
 import { Models } from 'appwrite';
+
+// Cache để tránh gọi API liên tục
+let authCache: {
+    user: Models.User<Models.Preferences> | null;
+    timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 
 export function useAuth() {
     const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const checkAuth = async () => {
+    const checkAuth = useCallback(async (): Promise<Models.User<Models.Preferences> | null> => {
         try {
-            // Kiểm tra cookieFallback trong localStorage
+            // Kiểm tra cache trước
+            if (authCache && (Date.now() - authCache.timestamp) < CACHE_DURATION) {
+                setUser(authCache.user);
+                setLoading(false);
+                return authCache.user;
+            }
+
             const cookieFallback = localStorage.getItem('cookieFallback');
             if (!cookieFallback || cookieFallback === '[]') {
                 setUser(null);
+                authCache = { user: null, timestamp: Date.now() };
                 setLoading(false);
-                return false;
+                return null;
             }
 
-            // Parse cookieFallback để lấy session token
-            try {
-                // cookieFallback có dạng JSON string
-                const cookieObj = JSON.parse(cookieFallback);
-                // Lấy key đầu tiên của object (session key)
-                const sessionKey = Object.keys(cookieObj)[0];
-                
-                if (sessionKey) {
-                    // Lấy thông tin user từ session hiện tại
-                    const currentUser = await account.get();
-                    setUser(currentUser);
-                    setLoading(false);
-                    return true;
-                }
-            } catch (error) {
-                console.error('Error parsing cookieFallback:', error);
-                setUser(null);
-                setLoading(false);
-                return false;
-            }
-
+            const currentUser = await account.get();
+            authCache = {
+                user: currentUser,
+                timestamp: Date.now()
+            };
+            setUser(currentUser);
+            return currentUser;
         } catch (error) {
             console.error('Auth check error:', error);
             setUser(null);
+            authCache = { user: null, timestamp: Date.now() };
+            return null;
+        } finally {
             setLoading(false);
-            return false;
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
 
     const logout = async () => {
         try {
             await account.deleteSession('current');
             localStorage.removeItem('cookieFallback');
             setUser(null);
+            authCache = null;
         } catch (error) {
             console.error('Logout error:', error);
         }
     };
-
-    useEffect(() => {
-        checkAuth();
-    }, []);
 
     return { user, loading, logout, checkAuth };
 }

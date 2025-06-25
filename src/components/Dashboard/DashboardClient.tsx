@@ -1,65 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { account } from "@/lib/appwrite";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { Toaster } from "sonner";
 import Sidebar from "./Sidebar";
 
 export default function DashboardClient({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, loading, logout } = useAuth();
+    const router = useRouter();
+    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const cookieFallback = localStorage.getItem("cookieFallback");
-                if (!cookieFallback || cookieFallback === "[]") {
-                    window.location.href = "/auth";
-                    return;
-                }
-
-                const currentUser = await account.get();
-                
-                // Check if user is admin
-                if (currentUser.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-                    window.location.href = "/auth";
-                    return;
-                }
-
-                setUser(currentUser);
-            } catch (error) {
-                console.error("Authentication error:", error);
-                window.location.href = "/auth";
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        checkAuth();
+        setIsClient(true);
     }, []);
+
+    useEffect(() => {
+        if (!loading && !user && isClient) {
+            router.replace("/auth");
+        }
+    }, [user, loading, router, isClient]);
 
     const handleLogout = async () => {
         try {
-            await account.deleteSession("current");
-            window.location.href = "/auth";
+            await logout();
+            router.replace("/auth");
         } catch (error) {
-            console.error("Logout error:", error);
+            console.error('Logout error:', error);
         }
     };
 
-    if (loading) {
+    // Hiển thị loading state khi đang kiểm tra auth
+    if (loading || !isClient) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
         );
+    }
+
+    // Không hiển thị gì khi chưa auth
+    if (!user) {
+        return null;
     }
 
     return (
         <div className="flex h-screen bg-gray-100">
             <Sidebar onLogout={handleLogout} />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="flex-1 overflow-auto">
+                <Toaster position="top-right" />
                 {children}
-            </main>
+            </div>
         </div>
     );
 } 

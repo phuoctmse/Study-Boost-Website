@@ -117,9 +117,9 @@ const columns: ColumnDef<Payment>[] = [
                     className={cn(
                         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
                         {
-                            "bg-green-100 text-green-800": status === "active",
-                            "bg-yellow-100 text-yellow-800": status === "expired",
-                            "bg-red-100 text-red-800": status === "cancelled",
+                            "bg-green-100 text-green-800": status === "Completed",
+                            "bg-yellow-100 text-yellow-800": status === "Pending",
+                            "bg-red-100 text-red-800": status === "Cancelled",
                         }
                     )}
                 >
