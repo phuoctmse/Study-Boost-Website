@@ -23,7 +23,7 @@ export const benefits: IBenefit[] = [
                 icon: <FiBookOpen size={26} />
             }
         ],
-        imageSrc: "/images/mockup-1.webp"
+        imageSrc: "/images/customize-schedule.png"
     },
     {
         title: "Quản lý thời gian hiệu quả",
@@ -45,7 +45,7 @@ export const benefits: IBenefit[] = [
                 icon: <FiActivity size={26} />
             }
         ],
-        imageSrc: "/images/mockup-2.webp"
+        imageSrc: "/images/pomodoro.png"
     },
     {
         title: "Cộng đồng học tập sôi động",
@@ -67,6 +67,6 @@ export const benefits: IBenefit[] = [
                 icon: <FiTarget size={26} />
             }
         ],
-        imageSrc: "/images/mockup-1.webp"
+        imageSrc: "/images/Leaderboard.png"
     },
 ]
