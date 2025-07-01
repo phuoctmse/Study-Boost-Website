@@ -6,6 +6,8 @@ import FAQ from "@/components/FAQ";
 import Stats from "@/components/Stats";
 import CTA from "@/components/CTA";
 import AdminAccess from "@/components/AdminAccess";
+import Section from "@/components/Section";
+import Pricing from "@/components/Pricing/Pricing";
 
 export default function HomePage() {
   return (
@@ -13,8 +15,22 @@ export default function HomePage() {
       <Container>
         <Hero />
         <Benefits />
+        <Section
+          id="pricing"
+          title="Bảng giá"
+          description="Đơn giản, trong suốt. Không có bất ngờ."
+        >
+          <Pricing />
+        </Section>
+
+        <Section
+          id="testimonials"
+          title="Những gì khách hàng nói về chúng tôi"
+          description="Nghe những gì khách hàng nói về chúng tôi."
+        >
+          <Testimonials />
+        </Section>
         <Stats />
-        <Testimonials />
         <FAQ />
         <CTA />
       </Container>

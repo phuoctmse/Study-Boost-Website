@@ -15,7 +15,7 @@ export const stats: IStats[] = [
         description: "Đánh giá trung bình từ người dùng trên các kho ứng dụng."
     },
     {
-        title: "1k+",
+        title: "2k+",
         icon: <BsFillClockFill size={34} className="text-green-600" />,
         description: "Phiên Pomodoro đã hoàn thành, giúp người học tập trung và hiệu quả hơn."
     }

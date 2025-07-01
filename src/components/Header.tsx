@@ -41,7 +41,7 @@ const Header: React.FC = () => {
                         ))}
                         <li>
                             <Link 
-                                href="/auth" 
+                                href="/" 
                                 className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors"
                             >
                                 Bắt đầu
