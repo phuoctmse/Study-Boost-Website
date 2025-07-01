@@ -72,7 +72,7 @@ export default function AuthPage() {
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
                 <div className="text-center">
                     <h2 className="text-3xl font-bold text-gray-900">
-                        Admin Sign In
+                        Sign In
                     </h2>
                 </div>
 
