@@ -2,16 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { account, config, databases } from '@/lib/appwrite';
-import { Query } from 'appwrite';
-import { format, parseISO } from 'date-fns';
+import { Query, Models } from 'appwrite';
+import { format } from 'date-fns';
+import { formatDateForAppwrite, formatDisplayDate } from '@/lib/utils';
 
 interface FinancialData {
   date: string;
   revenue: number;
-  transactions: number;
-  reviews: number;
+  transactions: Models.Document[];  // Use Models.Document type
+  reviews: Models.Document[];
   growthRate: number;
   rawDate: Date;
+}
+
+interface Payment extends Models.Document {
+  status: string;
+  payment_transaction_id: string;
 }
 
 export function useFinancialData(timeRange: number) {
@@ -25,132 +31,111 @@ export function useFinancialData(timeRange: number) {
         setLoading(true);
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - timeRange);
-        startDate.setHours(0, 0, 0, 0);
-        
-        // Format date to ISO string for Appwrite
-        const startDateString = startDate.toISOString();
 
-        // Fetch payments
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const startDateStr = formatDateForAppwrite(startDate);
+        const endDateStr = formatDateForAppwrite(endDate);
+
+        // Initialize data array for each day
+        const dateData: { [key: string]: FinancialData } = {};
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = formatDisplayDate(d);
+          dateData[dateStr] = {
+            date: dateStr,
+            revenue: 0,
+            transactions: [], // Initialize as empty array
+            reviews: [],
+            growthRate: 0,
+            rawDate: new Date(d)
+          };
+        }
+
+        // Fetch transactions
+        const transactions = await databases.listDocuments(
+          config.databaseId,
+          config.collections.transactions,
+          [
+            Query.greaterThanEqual('$createdAt', startDateStr),
+            Query.lessThanEqual('$createdAt', endDateStr)
+          ]
+        );
+
+        // Fetch payments to check status
         const payments = await databases.listDocuments(
           config.databaseId,
           config.collections.payments,
           [
-            Query.greaterThan('$createdAt', startDateString),
-            Query.orderAsc('$createdAt')
+            Query.greaterThanEqual('$createdAt', startDateStr),
+            Query.lessThanEqual('$createdAt', endDateStr)
           ]
         );
 
-        // Fetch feedbacks
-        const feedbacks = await databases.listDocuments(
+        // Create a map of payment_transaction_id to payment status
+        const paymentStatusMap = new Map<string, string>();
+        payments.documents.forEach((payment: any) => {
+          paymentStatusMap.set(payment.payment_transaction_id, payment.status);
+        });
+
+        // Process transactions
+        transactions.documents.forEach((transaction: any) => {
+          const date = new Date(transaction.$createdAt);
+          const dateStr = formatDisplayDate(date);
+          
+          if (dateData[dateStr]) {
+            // Add transaction to the array
+            dateData[dateStr].transactions.push({
+              ...transaction,
+              status: paymentStatusMap.get(transaction.$id) || 'Pending'
+            });
+
+            // Only add to revenue if payment status is Completed
+            if (paymentStatusMap.get(transaction.$id) === 'Completed') {
+              dateData[dateStr].revenue += transaction.amountIn || 0;
+            }
+          }
+        });
+
+        // Fetch reviews
+        const reviews = await databases.listDocuments(
           config.databaseId,
           config.collections.feedback,
           [
-            Query.greaterThan('$createdAt', startDateString),
-            Query.orderAsc('$createdAt')
+            Query.greaterThanEqual('$createdAt', startDateStr),
+            Query.lessThanEqual('$createdAt', endDateStr)
           ]
         );
 
-        // Process data by date
-        const dailyData = new Map<string, FinancialData>();
-
-        // Process payments
-        for (const payment of payments.documents) {
-          const paymentDate = new Date(payment.$createdAt);
-          const dateKey = format(paymentDate, 'yyyy-MM-dd');
-          const formattedDate = format(paymentDate, 'dd/MM/yyyy');
-
-          let existing = dailyData.get(dateKey);
-          if (!existing) {
-            existing = {
-              date: formattedDate,
-              revenue: 0,
-              transactions: 0,
-              reviews: 0,
-              growthRate: 0,
-              rawDate: paymentDate
-            };
-            dailyData.set(dateKey, existing);
+        // Process reviews
+        reviews.documents.forEach((review: any) => {
+          const date = new Date(review.$createdAt);
+          const dateStr = formatDisplayDate(date);
+          if (dateData[dateStr]) {
+            dateData[dateStr].reviews.push(review);
           }
-
-          // Get transaction details
-          try {
-            const transaction = await databases.getDocument(
-              config.databaseId,
-              config.collections.transactions,
-              payment.payment_transaction_id
-            );
-            existing.revenue += transaction.amountIn || 0;
-            existing.transactions += 1;
-          } catch (error) {
-            console.error(`Error fetching transaction for payment ${payment.$id}:`, error);
-          }
-        }
-
-        // Process feedback
-        for (const feedback of feedbacks.documents) {
-          const feedbackDate = new Date(feedback.$createdAt);
-          const dateKey = format(feedbackDate, 'yyyy-MM-dd');
-          const formattedDate = format(feedbackDate, 'dd/MM/yyyy');
-
-          let existing = dailyData.get(dateKey);
-          if (!existing) {
-            existing = {
-              date: formattedDate,
-              revenue: 0,
-              transactions: 0,
-              reviews: 0,
-              growthRate: 0,
-              rawDate: feedbackDate
-            };
-            dailyData.set(dateKey, existing);
-          }
-          existing.reviews += 1;
-        }
-
-        // Fill in missing dates with zero values
-        for (let i = 0; i < timeRange; i++) {
-          const currentDate = new Date();
-          currentDate.setDate(currentDate.getDate() - i);
-          currentDate.setHours(0, 0, 0, 0);
-          
-          const dateKey = format(currentDate, 'yyyy-MM-dd');
-          const formattedDate = format(currentDate, 'dd/MM/yyyy');
-          
-          if (!dailyData.has(dateKey)) {
-            dailyData.set(dateKey, {
-              date: formattedDate,
-              revenue: 0,
-              transactions: 0,
-              reviews: 0,
-              growthRate: 0,
-              rawDate: currentDate
-            });
-          }
-        }
-
-        // Convert map to array and sort by date
-        const sortedData = Array.from(dailyData.values()).sort((a, b) => {
-          return b.rawDate.getTime() - a.rawDate.getTime();
         });
 
-        // Calculate growth rate
-        for (let i = 1; i < sortedData.length; i++) {
-          const previousRevenue = sortedData[i - 1].revenue;
-          const currentRevenue = sortedData[i].revenue;
+        // Calculate growth rates
+        const sortedDates = Object.values(dateData).sort((a, b) => 
+          a.rawDate.getTime() - b.rawDate.getTime()
+        );
+
+        for (let i = 1; i < sortedDates.length; i++) {
+          const previousRevenue = sortedDates[i - 1].revenue;
+          const currentRevenue = sortedDates[i].revenue;
           
           if (previousRevenue === 0) {
-            sortedData[i].growthRate = currentRevenue > 0 ? 100 : 0;
+            sortedDates[i].growthRate = currentRevenue > 0 ? 100 : 0;
           } else {
-            sortedData[i].growthRate = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+            sortedDates[i].growthRate = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
           }
         }
 
-        setData(sortedData);
-        setError(null);
+        setData(sortedDates);
       } catch (error) {
-        console.error('Error fetching financial data:', error);
-        setError('Error fetching financial data: ' + (error as Error).message);
-        setData([]);
+        console.error('Error fetching data:', error);
+        setError('Failed to fetch data');
       } finally {
         setLoading(false);
       }

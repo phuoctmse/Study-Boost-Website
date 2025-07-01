@@ -22,115 +22,78 @@ import {
 } from "@tanstack/react-table";
 
 interface Feedback extends Models.Document {
-    user_id: string
-    content: string
-    rate: number
-    created_at: Date
-}
-
-function RatingStars({ rating }: { rating: number }) {
-    return (
-        <div className="flex items-center space-x-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-                <span key={star}>
-                    {star <= rating ? (
-                        <StarSolidIcon className="w-5 h-5 text-yellow-400" />
-                    ) : (
-                        <StarOutlineIcon className="w-5 h-5 text-gray-300" />
-                    )}
-                </span>
-            ))}
-        </div>
-    );
+    user_id: string;
+    content: string;
+    rate: number;
 }
 
 export default function FeedbackTable() {
-    const [sorting, setSorting] = useState<SortingState>([]);
     const [data, setData] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
+    const [sorting, setSorting] = useState<SortingState>([]);
 
     const columns: ColumnDef<Feedback>[] = [
         {
-            accessorKey: "user_id",
-            header: ({ column }) => {
-                return (
-                    <button
-                        className="flex items-center"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        User ID
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </button>
-                );
+            accessorKey: "created_at",
+            header: "Thời gian",
+            cell: ({ row }) => {
+                const date = new Date(row.original.$createdAt);
+                return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             },
         },
         {
-            accessorKey: "content",
-            header: ({ column }) => {
-                return (
-                    <button
-                        className="flex items-center"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Content
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </button>
-                );
+            accessorKey: "user_id",
+            header: "Người dùng",
+            cell: async ({ row }) => {
+                try {
+                    const userDoc = await databases.getDocument(
+                        config.databaseId,
+                        config.collections.users,
+                        row.original.user_id
+                    );
+                    return userDoc.name || userDoc.email;
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                    return row.original.user_id;
+                }
             },
-            cell: ({ row }) => (
-                <div className="max-w-md truncate">
-                    {row.getValue("content")}
-                </div>
-            ),
         },
         {
             accessorKey: "rate",
             header: ({ column }) => {
                 return (
-                    <button
-                        className="flex items-center"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Rating
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </button>
+                    <div className="text-right">
+                        <button
+                            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                            className="flex items-center gap-1"
+                        >
+                            Đánh giá
+                            <ArrowUpDown className="h-4 w-4" />
+                        </button>
+                    </div>
                 );
             },
-            cell: ({ row }) => (
-                <RatingStars rating={row.getValue("rate")} />
-            ),
+            cell: ({ row }) => {
+                const rating = row.original.rate;
+                return (
+                    <div className="text-right flex items-center justify-end">
+                        {[...Array(5)].map((_, index) => (
+                            index < rating ? (
+                                <StarSolidIcon key={index} className="h-5 w-5 text-yellow-400" />
+                            ) : (
+                                <StarOutlineIcon key={index} className="h-5 w-5 text-gray-300" />
+                            )
+                        ))}
+                    </div>
+                );
+            },
         },
         {
-            accessorKey: "created_at",
-            header: ({ column }) => {
-                return (
-                    <button
-                        className="flex items-center"
-                        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    >
-                        Date
-                        <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </button>
-                );
-            },
-            cell: ({ row }) => (
-                <div>
-                    {new Date(row.getValue("created_at")).toLocaleDateString()}
-                </div>
-            ),
+            accessorKey: "content",
+            header: "Nội dung",
+            cell: ({ row }) => row.original.content,
         },
     ];
-
-    const table = useReactTable({
-        data,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            sorting,
-        },
-    });
 
     useEffect(() => {
         const fetchFeedbacks = async () => {
@@ -138,13 +101,11 @@ export default function FeedbackTable() {
                 const response = await databases.listDocuments(
                     config.databaseId,
                     config.collections.feedback,
-                    [
-                        Query.orderDesc('$createdAt'),
-                    ]
+                    [Query.orderDesc('$createdAt')]
                 );
                 setData(response.documents as Feedback[]);
             } catch (error) {
-                console.error('Error fetching feedback:', error);
+                console.error('Error fetching feedbacks:', error);
             } finally {
                 setLoading(false);
             }
@@ -153,12 +114,19 @@ export default function FeedbackTable() {
         fetchFeedbacks();
     }, []);
 
+    const table = useReactTable({
+        data,
+        columns,
+        onSortingChange: setSorting,
+        getSortedRowModel: getSortedRowModel(),
+        getCoreRowModel: getCoreRowModel(),
+        state: {
+            sorting,
+        },
+    });
+
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        );
+        return <div>Loading...</div>;
     }
 
     return (
@@ -189,21 +157,15 @@ export default function FeedbackTable() {
                             >
                                 {row.getVisibleCells().map((cell) => (
                                     <TableCell key={cell.id}>
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </TableCell>
                                 ))}
                             </TableRow>
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell
-                                colSpan={columns.length}
-                                className="h-24 text-center"
-                            >
-                                No feedback found.
+                            <TableCell colSpan={columns.length} className="h-24 text-center">
+                                Không có dữ liệu.
                             </TableCell>
                         </TableRow>
                     )}

@@ -22,4 +22,28 @@ export function toAppwriteDate(date: string | Date): string {
   
   // Ensure we're working with UTC
   return date.toISOString();
+}
+
+/**
+ * Format a date for Appwrite queries
+ * @param date Date to format
+ * @returns Formatted date string
+ */
+export function formatDateForAppwrite(date: Date): string {
+  // Ensure we're working with a new Date object
+  const d = new Date(date);
+  // Format to ISO string without milliseconds
+  return d.toISOString().split('.')[0];
+}
+
+/**
+ * Format a date for display
+ * @param date Date to format
+ * @returns Formatted date string (DD/MM/YYYY)
+ */
+export function formatDisplayDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 } 

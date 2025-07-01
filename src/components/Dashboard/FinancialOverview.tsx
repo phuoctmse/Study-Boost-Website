@@ -37,6 +37,8 @@ import {
   Bar,
   ReferenceLine
 } from 'recharts';
+import { formatDateForAppwrite, formatDisplayDate } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const timeRangeOptions = [
   { value: 7, label: "7 ngày" },
@@ -58,10 +60,15 @@ interface User extends Models.Document {
 interface DayData {
   date: string;
   revenue: number;
-  transactions: number;
-  reviews: number;
+  transactions: Models.Document[];
+  reviews: Models.Document[];
   growthRate: number;
   rawDate: Date;
+}
+
+interface SelectedDayDetails {
+  date: string;
+  data: DayData;
 }
 
 interface DialogContent {
@@ -111,8 +118,8 @@ export default function FinancialOverview() {
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogContent, setDialogContent] = useState<DialogContent | null>(null);
-  const [selectedDayDetails, setSelectedDayDetails] = useState<any>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedDayDetails, setSelectedDayDetails] = useState<SelectedDayDetails | null>(null);
+  const [selectedView, setSelectedView] = useState<'transactions' | 'reviews'>('transactions');
 
   useEffect(() => {
     const fetchRecentFeedback = async () => {
@@ -170,8 +177,8 @@ export default function FinancialOverview() {
   }
 
   const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-  const totalTransactions = data.reduce((sum, item) => sum + item.transactions, 0);
-  const totalReviews = data.reduce((sum, item) => sum + item.reviews, 0);
+  const totalTransactions = data.reduce((sum, item) => sum + (item.transactions?.length || 0), 0);
+  const totalReviews = data.reduce((sum, item) => sum + (item.reviews?.length || 0), 0);
 
   const handleCardClick = (type: 'revenue' | 'transactions' | 'reviews') => {
     let title = '';
@@ -196,67 +203,36 @@ export default function FinancialOverview() {
 
   const handleDayClick = async (date: string, dayData: DayData) => {
     try {
-      // Parse the date from the table format (DD/MM/YYYY)
-      const [day, month, year] = date.split('/').map(Number);
-      
-      // Create start and end of day in UTC
-      const startOfDay = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-      const endOfDay = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
-
-      // Get transactions for the day
-      const transactions = await databases.listDocuments(
-        config.databaseId,
-        config.collections.transactions,
-        [
-          Query.greaterThanEqual('$createdAt', startOfDay.toISOString()),
-          Query.lessThanEqual('$createdAt', endOfDay.toISOString()),
-          Query.orderDesc('$createdAt')
-        ]
-      );
-
-      // Get reviews for the day
-      const reviews = await databases.listDocuments(
-        config.databaseId,
-        config.collections.feedback,
-        [
-          Query.greaterThanEqual('$createdAt', startOfDay.toISOString()),
-          Query.lessThanEqual('$createdAt', endOfDay.toISOString()),
-          Query.orderDesc('$createdAt')
-        ]
-      );
-
       // Get user details for each review
-      const reviewsWithUserDetails = await Promise.all(
-        reviews.documents.map(async (review: any) => {
+      const reviewsWithUsernames = await Promise.all(
+        dayData.reviews.map(async (review) => {
           try {
-            const user = await databases.getDocument(
+            const userDoc = await databases.getDocument(
               config.databaseId,
               config.collections.users,
               review.user_id
             );
             return {
               ...review,
-              username: user.username
+              username: userDoc.username || userDoc.email
             };
           } catch (error) {
-            console.error(`Error fetching user for review ${review.$id}:`, error);
+            console.error('Error fetching user:', error);
             return {
               ...review,
-              username: 'Unknown User'
+              username: review.user_id
             };
           }
         })
       );
 
       setSelectedDayDetails({
-        date: date,
+        date,
         data: {
           ...dayData,
-          detailedTransactions: transactions.documents,
-          detailedReviews: reviewsWithUserDetails
+          reviews: reviewsWithUsernames
         }
       });
-      setDetailDialogOpen(true);
     } catch (error) {
       console.error('Error fetching day details:', error);
     }
@@ -267,136 +243,110 @@ export default function FinancialOverview() {
     const { date, data } = selectedDayDetails;
 
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <h4 className="text-sm font-medium text-gray-500">Doanh thu</h4>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(data.revenue)}</p>
-            {data.growthRate !== undefined && (
-              <p className={`text-sm ${data.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatGrowthRate(data.growthRate)} so với ngày trước
-              </p>
-            )}
-          </Card>
-          <Card className="p-4">
-            <h4 className="text-sm font-medium text-gray-500">Số giao dịch</h4>
-            <p className="text-xl font-bold text-blue-600">{data.transactions}</p>
-          </Card>
-          <Card className="p-4">
-            <h4 className="text-sm font-medium text-gray-500">Đánh giá</h4>
-            <p className="text-xl font-bold text-purple-600">{data.reviews}</p>
-          </Card>
-        </div>
-
-        {data.detailedTransactions?.length > 0 && (
-          <div>
-            <h4 className="text-lg font-semibold mb-3">Chi tiết giao dịch</h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Số tiền</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.detailedTransactions.map((transaction: any) => (
-                  <TableRow key={transaction.$id}>
-                    <TableCell>
-                      {new Date(transaction.$createdAt).toLocaleTimeString('vi-VN')}
-                    </TableCell>
-                    <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        transaction.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {transaction.status === 'completed' ? 'Hoàn thành' : 'Đang xử lý'}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {data.detailedReviews?.length > 0 && (
-          <div>
-            <h4 className="text-lg font-semibold mb-3">Chi tiết đánh giá</h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Đánh giá</TableHead>
-                  <TableHead>Nội dung</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.detailedReviews.map((review: any) => (
-                  <TableRow key={review.$id}>
-                    <TableCell>
-                      {new Date(review.$createdAt).toLocaleTimeString('vi-VN')}
-                    </TableCell>
-                    <TableCell>
-                      <RatingStars rating={review.rate} />
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {review.content}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderDetailTable = () => {
-    if (!dialogContent) return null;
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Ngày</TableHead>
-            <TableHead className="text-right">
-              {dialogContent.type === 'revenue' && 'Doanh thu'}
-              {dialogContent.type === 'transactions' && 'Số giao dịch'}
-              {dialogContent.type === 'reviews' && 'Số đánh giá'}
-            </TableHead>
-            {dialogContent.type === 'revenue' && (
-              <TableHead className="text-right">Tăng trưởng</TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {dialogContent.data.map((item: DayData) => (
-            <TableRow 
-              key={item.date}
-              className="cursor-pointer hover:bg-gray-50"
-              onClick={() => handleDayClick(item.date, item)}
+      <Dialog open={!!selectedDayDetails} onOpenChange={() => setSelectedDayDetails(null)}>
+        <DialogContent className="max-w-4xl bg-white">
+          <DialogHeader>
+            <DialogTitle>Chi tiết ngày {date}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex justify-center space-x-4 mb-4">
+            <button
+              className={`px-4 py-2 rounded-lg ${
+                selectedView === 'transactions' ? 'bg-blue-500 text-white' : 'bg-gray-100'
+              }`}
+              onClick={() => setSelectedView('transactions')}
             >
-              <TableCell>
-                {item.date}
-              </TableCell>
-              <TableCell className="text-right">
-                {dialogContent.type === 'revenue' && formatCurrency(item.revenue)}
-                {dialogContent.type === 'transactions' && item.transactions}
-                {dialogContent.type === 'reviews' && item.reviews}
-              </TableCell>
-              {dialogContent.type === 'revenue' && (
-                <TableCell className="text-right">
-                  <span className={item.growthRate >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatGrowthRate(item.growthRate)}
-                  </span>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              Giao dịch
+            </button>
+            <button
+              className={`px-4 py-2 rounded-lg ${
+                selectedView === 'reviews' ? 'bg-blue-500 text-white' : 'bg-gray-100'
+              }`}
+              onClick={() => setSelectedView('reviews')}
+            >
+              Đánh giá
+            </button>
+          </div>
+
+          {selectedView === 'transactions' ? (
+            <div className="max-h-[500px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Thời gian</TableHead>
+                    <TableHead>Số tiền</TableHead>
+                    <TableHead>Cổng thanh toán</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.transactions.map((transaction) => (
+                    <TableRow key={transaction.$id}>
+                      <TableCell>
+                        {format(new Date(transaction.$createdAt), 'HH:mm:ss')}
+                      </TableCell>
+                      <TableCell>
+                        {new Intl.NumberFormat('vi-VN', {
+                          style: 'currency',
+                          currency: 'VND'
+                        }).format(transaction.amountIn)}
+                      </TableCell>
+                      <TableCell>{transaction.gateway}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          transaction.status === 'Completed'
+                            ? 'bg-green-100 text-green-800'
+                            : transaction.status === 'Pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {transaction.status === 'Completed' ? 'Hoàn thành' : 
+                           transaction.status === 'Pending' ? 'Đang xử lý' : 'Thất bại'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="max-h-[500px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Thời gian</TableHead>
+                    <TableHead>Người dùng</TableHead>
+                    <TableHead>Đánh giá</TableHead>
+                    <TableHead>Nội dung</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedDayDetails?.data.reviews.map((review: any) => (
+                    <TableRow key={review.$id}>
+                      <TableCell>
+                        {format(new Date(review.$createdAt), 'HH:mm:ss')}
+                      </TableCell>
+                      <TableCell>{review.username || review.user_id}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, index) => (
+                            index < review.rate ? (
+                              <StarSolidIcon key={index} className="h-4 w-4 text-yellow-400" />
+                            ) : (
+                              <StarOutlineIcon key={index} className="h-4 w-4 text-gray-300" />
+                            )
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{review.content}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     );
   };
 
@@ -405,12 +355,59 @@ export default function FinancialOverview() {
 
     return (
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl bg-white">
           <DialogHeader>
-            <DialogTitle>{dialogContent.title}</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {dialogContent.title}
+            </DialogTitle>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto">
-            {renderDetailTable()}
+          <div className="bg-white rounded-lg">
+            <div className="max-h-[60vh] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="font-semibold">Ngày</TableHead>
+                    <TableHead className="text-right font-semibold">
+                      {dialogContent.type === 'revenue' && 'Doanh thu'}
+                      {dialogContent.type === 'transactions' && 'Số giao dịch'}
+                      {dialogContent.type === 'reviews' && 'Số đánh giá'}
+                    </TableHead>
+                    {dialogContent.type === 'revenue' && (
+                      <TableHead className="text-right font-semibold">Tăng trưởng</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dialogContent.data.map((item: DayData) => (
+                    <TableRow 
+                      key={item.date}
+                      className="cursor-pointer transition-colors hover:bg-blue-50"
+                      onClick={() => handleDayClick(item.date, item)}
+                    >
+                      <TableCell className="font-medium">
+                        {item.date}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {dialogContent.type === 'revenue' && formatCurrency(item.revenue)}
+                        {dialogContent.type === 'transactions' && item.transactions.length}
+                        {dialogContent.type === 'reviews' && item.reviews.length}
+                      </TableCell>
+                      {dialogContent.type === 'revenue' && (
+                        <TableCell className="text-right">
+                          <span className={`px-2 py-1 rounded-full text-sm ${
+                            item.growthRate >= 0 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {formatGrowthRate(item.growthRate)}
+                          </span>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -443,10 +440,11 @@ export default function FinancialOverview() {
           className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => handleCardClick('revenue')}
         >
-          <h3 className="text-lg font-semibold mb-2">Tổng doanh thu</h3>
+          <h3 className="text-lg font-semibold mb-2">Tổng doanh thu (Hoàn thành)</h3>
           <p className="text-2xl font-bold text-green-600">
             {formatCurrency(totalRevenue)}
           </p>
+          <p className="text-sm text-gray-500 mt-1">*Chỉ tính các giao dịch đã hoàn thành</p>
         </Card>
         <Card 
           className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
@@ -508,7 +506,10 @@ export default function FinancialOverview() {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data}
+                data={data.map(item => ({
+                  date: item.date,
+                  transactions: item.transactions?.length || 0
+                }))}
                 margin={{
                   top: 5,
                   right: 30,
@@ -526,7 +527,7 @@ export default function FinancialOverview() {
                   tickFormatter={formatNumber}
                 />
                 <Tooltip
-                  formatter={(value: number) => [formatNumber(value), 'Transactions']}
+                  formatter={(value: number) => [formatNumber(value), 'Số giao dịch']}
                 />
                 <Bar
                   dataKey="transactions"
