@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { account, config, databases } from '@/lib/appwrite';
 import { Query } from 'appwrite';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface FinancialData {
   date: string;
@@ -11,6 +11,7 @@ interface FinancialData {
   transactions: number;
   reviews: number;
   growthRate: number;
+  rawDate: Date;
 }
 
 export function useFinancialData(timeRange: number) {
@@ -24,6 +25,7 @@ export function useFinancialData(timeRange: number) {
         setLoading(true);
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - timeRange);
+        startDate.setHours(0, 0, 0, 0);
         
         // Format date to ISO string for Appwrite
         const startDateString = startDate.toISOString();
@@ -54,18 +56,20 @@ export function useFinancialData(timeRange: number) {
         // Process payments
         for (const payment of payments.documents) {
           const paymentDate = new Date(payment.$createdAt);
-          const date = format(paymentDate, 'dd/MM');
+          const dateKey = format(paymentDate, 'yyyy-MM-dd');
+          const formattedDate = format(paymentDate, 'dd/MM/yyyy');
 
-          let existing = dailyData.get(date);
+          let existing = dailyData.get(dateKey);
           if (!existing) {
             existing = {
-              date,
+              date: formattedDate,
               revenue: 0,
               transactions: 0,
               reviews: 0,
-              growthRate: 0
+              growthRate: 0,
+              rawDate: paymentDate
             };
-            dailyData.set(date, existing);
+            dailyData.set(dateKey, existing);
           }
 
           // Get transaction details
@@ -79,25 +83,26 @@ export function useFinancialData(timeRange: number) {
             existing.transactions += 1;
           } catch (error) {
             console.error(`Error fetching transaction for payment ${payment.$id}:`, error);
-            // Continue processing other payments even if one fails
           }
         }
 
         // Process feedback
         for (const feedback of feedbacks.documents) {
           const feedbackDate = new Date(feedback.$createdAt);
-          const date = format(feedbackDate, 'dd/MM');
+          const dateKey = format(feedbackDate, 'yyyy-MM-dd');
+          const formattedDate = format(feedbackDate, 'dd/MM/yyyy');
 
-          let existing = dailyData.get(date);
+          let existing = dailyData.get(dateKey);
           if (!existing) {
             existing = {
-              date,
+              date: formattedDate,
               revenue: 0,
               transactions: 0,
               reviews: 0,
-              growthRate: 0
+              growthRate: 0,
+              rawDate: feedbackDate
             };
-            dailyData.set(date, existing);
+            dailyData.set(dateKey, existing);
           }
           existing.reviews += 1;
         }
@@ -106,25 +111,26 @@ export function useFinancialData(timeRange: number) {
         for (let i = 0; i < timeRange; i++) {
           const currentDate = new Date();
           currentDate.setDate(currentDate.getDate() - i);
-          const dateStr = format(currentDate, 'dd/MM');
+          currentDate.setHours(0, 0, 0, 0);
           
-          if (!dailyData.has(dateStr)) {
-            dailyData.set(dateStr, {
-              date: dateStr,
+          const dateKey = format(currentDate, 'yyyy-MM-dd');
+          const formattedDate = format(currentDate, 'dd/MM/yyyy');
+          
+          if (!dailyData.has(dateKey)) {
+            dailyData.set(dateKey, {
+              date: formattedDate,
               revenue: 0,
               transactions: 0,
               reviews: 0,
-              growthRate: 0
+              growthRate: 0,
+              rawDate: currentDate
             });
           }
         }
 
         // Convert map to array and sort by date
         const sortedData = Array.from(dailyData.values()).sort((a, b) => {
-          const [dayA, monthA] = a.date.split('/').map(Number);
-          const [dayB, monthB] = b.date.split('/').map(Number);
-          if (monthA !== monthB) return monthA - monthB;
-          return dayA - dayB;
+          return b.rawDate.getTime() - a.rawDate.getTime();
         });
 
         // Calculate growth rate
