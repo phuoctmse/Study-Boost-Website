@@ -25,6 +25,7 @@ interface Feedback extends Models.Document {
     user_id: string;
     content: string;
     rate: number;
+    username?: string;
 }
 
 export default function FeedbackTable() {
@@ -38,25 +39,20 @@ export default function FeedbackTable() {
             header: "Thời gian",
             cell: ({ row }) => {
                 const date = new Date(row.original.$createdAt);
-                return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                return date.toLocaleString('vi-VN', { 
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
             },
         },
         {
             accessorKey: "user_id",
             header: "Người dùng",
-            cell: async ({ row }) => {
-                try {
-                    const userDoc = await databases.getDocument(
-                        config.databaseId,
-                        config.collections.users,
-                        row.original.user_id
-                    );
-                    return userDoc.name || userDoc.email;
-                } catch (error) {
-                    console.error('Error fetching user:', error);
-                    return row.original.user_id;
-                }
-            },
+            cell: ({ row }) => row.original.username || row.original.user_id,
         },
         {
             accessorKey: "rate",
@@ -76,7 +72,7 @@ export default function FeedbackTable() {
             cell: ({ row }) => {
                 const rating = row.original.rate;
                 return (
-                    <div className="text-right flex items-center justify-end">
+                    <div className="text-left flex items-center justify-start">
                         {[...Array(5)].map((_, index) => (
                             index < rating ? (
                                 <StarSolidIcon key={index} className="h-5 w-5 text-yellow-400" />
@@ -96,19 +92,47 @@ export default function FeedbackTable() {
     ];
 
     useEffect(() => {
-        const fetchFeedbacks = async () => {
-            try {
-                const response = await databases.listDocuments(
-                    config.databaseId,
-                    config.collections.feedback,
-                    [Query.orderDesc('$createdAt')]
+        const fetchFeedbacks = () => {
+            setLoading(true);
+            databases.listDocuments(
+                config.databaseId,
+                config.collections.feedback,
+                [Query.orderDesc('$createdAt')]
+            )
+            .then((response) => {
+                const feedbacks = response.documents as Feedback[];
+                
+                // Fetch usernames for all feedbacks
+                return Promise.all(
+                    feedbacks.map(feedback => 
+                        databases.getDocument(
+                            config.databaseId,
+                            config.collections.users,
+                            feedback.user_id
+                        )
+                        .then(userDoc => ({
+                            ...feedback,
+                            username: userDoc.name || userDoc.email
+                        }))
+                        .catch(error => {
+                            console.error('Error fetching user:', error);
+                            return {
+                                ...feedback,
+                                username: feedback.user_id
+                            };
+                        })
+                    )
                 );
-                setData(response.documents as Feedback[]);
-            } catch (error) {
+            })
+            .then(feedbacksWithUsernames => {
+                setData(feedbacksWithUsernames);
+            })
+            .catch(error => {
                 console.error('Error fetching feedbacks:', error);
-            } finally {
+            })
+            .finally(() => {
                 setLoading(false);
-            }
+            });
         };
 
         fetchFeedbacks();
