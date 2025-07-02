@@ -10,6 +10,7 @@ import Container from './Container';
 import { siteDetails } from '@/data/siteDetails';
 import { menuItems } from '@/data/menuItems';
 import CustomFingerprint from './CustomFingerprint';
+import { ctaDetails } from '@/data/cta';
 
 const Header: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +42,7 @@ const Header: React.FC = () => {
                         ))}
                         <li>
                             <Link 
-                                href="/Study_Boost.apk" 
+                                href={ctaDetails.googlePlayUrl} 
                                 className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors"
                                 download
                             >
