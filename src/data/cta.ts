@@ -3,5 +3,5 @@ export const ctaDetails = {
     subheading: 'Hành trình học tập hiệu quả bắt đầu từ đây. Bắt đầu ngay hôm nay với AI trợ giảng thông minh, phương pháp Pomodoro và cộng đồng học tập sôi động!',
     authUrl: '/auth',
     appStoreUrl: '#',
-    googlePlayUrl: '/Study_Boost.apk'
+    googlePlayUrl: 'https://github.com/phuoctmse/Study-Boost-Website/releases/download/v1.0.0/Study_Boost.apk'
 }
