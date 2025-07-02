@@ -41,8 +41,9 @@ const Header: React.FC = () => {
                         ))}
                         <li>
                             <Link 
-                                href="/" 
+                                href="/Study_Boost.apk" 
                                 className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors"
+                                download
                             >
                                 Bắt đầu
                             </Link>
