@@ -239,7 +239,6 @@ export default function PaymentsTable() {
     }, []);
 
     const handleRowClick = async (payment: Payment) => {
-        console.log(payment)
         setSelectedPayment(payment);
         try {
             const response = await databases.getDocument(

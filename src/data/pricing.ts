@@ -10,7 +10,6 @@ interface IPackage {
 }
 
 const packages = await databases.listDocuments(config.databaseId, config.collections.packages, [Query.orderAsc('$createdAt')]);
-console.log(packages)
 
 export const tiers = packages.documents.map((pkg: any) => {
     if (pkg.name === 'Dài Hạn') {
