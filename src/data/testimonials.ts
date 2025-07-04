@@ -21,7 +21,7 @@ export const testimonials: ITestimonial[] = [
         avatar: '/images/testimonial-3.webp',
     },
     {
-        name: 'Thảo Vy',
+        name: 'Hoàng Vy',
         role: 'CEO at Xceptional',
         message: `Tôi đã sử dụng ${siteDetails.siteName} trong hơn 1 năm và nó đã giúp tôi quản lý thời gian học tập của mình một cách hiệu quả. Tôi rất hài lòng với sự hỗ trợ từ đội ngũ hỗ trợ của ${siteDetails.siteName}.`,
         avatar: '/images/testimonial-3.webp',
