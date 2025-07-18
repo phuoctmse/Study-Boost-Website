@@ -35,6 +35,18 @@ export default function FeedbackTable() {
 
     const columns: ColumnDef<Feedback>[] = [
         {
+            id: "stt",
+            header: "STT",
+            cell: ({ row }) => {
+                return (
+                    <div className="text-center font-medium">
+                        {row.index + 1}
+                    </div>
+                );
+            },
+            size: 60,
+        },
+        {
             accessorKey: "created_at",
             header: "Thời gian",
             cell: ({ row }) => {

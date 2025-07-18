@@ -303,8 +303,32 @@ export default function PaymentsTable() {
                     <DialogHeader>
                         <DialogTitle>Payment Transaction Details</DialogTitle>
                     </DialogHeader>
-                    {transactionDetails && (
+                    {transactionDetails && selectedPayment && (
                         <div className="grid gap-4 py-4">
+                            {/* User and Payment Info */}
+                            <div className="grid grid-cols-2 gap-4 pb-4 border-b">
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Username</p>
+                                    <p className="text-sm text-gray-900 font-medium">{selectedPayment.username || "Unknown User"}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-500">Payment Status</p>
+                                    <div
+                                        className={cn(
+                                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                            {
+                                                "bg-green-100 text-green-800": selectedPayment.status === "active",
+                                                "bg-yellow-100 text-yellow-800": selectedPayment.status === "expired",
+                                                "bg-red-100 text-red-800": selectedPayment.status === "cancelled",
+                                            }
+                                        )}
+                                    >
+                                        {selectedPayment.status.charAt(0).toUpperCase() + selectedPayment.status.slice(1)}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Transaction Details */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-gray-500">Gateway</p>
@@ -312,7 +336,15 @@ export default function PaymentsTable() {
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-gray-500">Transaction Date</p>
-                                    <p className="text-sm text-gray-900">{transactionDetails.transactionDate}</p>
+                                    <p className="text-sm text-gray-900">
+                                        {new Date(transactionDetails.transactionDate).toLocaleDateString('vi-VN', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-gray-500">Account Number</p>
